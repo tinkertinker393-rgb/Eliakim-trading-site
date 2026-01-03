@@ -1,82 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DERIV PRO | AI Terminal</title>
+    <meta charset="UTF-8"><title>DERIV QUANT PRO | AI TERMINAL</title>
     <style>
-        /* INTEGRATED PROFESSIONAL STYLES */
-        body { background: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        body { background: #0b0e14; color: #c9d1d9; font-family: 'Inter', sans-serif; display: flex; justify-content: center; padding: 20px; margin: 0; }
         .container { width: 100%; max-width: 440px; background: #161b22; border-radius: 12px; padding: 20px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h1 { font-size: 20px; margin: 0; color: #fff; text-align: center; }
+        h1 span { color: #2ea043; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h1 { font-size: 22px; margin: 0; color: #fff; }
-        h1 span { color: #238636; }
+        /* SCOREBOARD */
+        .scoreboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 15px 0; background: #0d1117; padding: 10px; border-radius: 8px; border: 1px solid #30363d; }
+        .score-item { text-align: center; font-size: 10px; }
+        .score-val { display: block; font-weight: bold; color: #2ea043; font-size: 12px; }
+
+        /* DIGIT BELT */
+        .digit-belt { display: flex; justify-content: space-between; background: #0d1117; padding: 12px 10px; border-radius: 50px; position: relative; margin: 15px 0; border: 1px solid #30363d; }
+        .digit-node { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #8b949e; z-index: 2; }
+        #digit-cursor { position: absolute; width: 32px; height: 32px; background: rgba(46, 160, 67, 0.15); border: 2px solid #2ea043; border-radius: 50%; top: 10px; left: 10px; transition: left 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 1; }
+
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        input, select { background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 12px; }
         
-        .status-offline { color: #f85149; font-size: 12px; font-weight: bold; }
-        .status-online { color: #238636; font-size: 12px; font-weight: bold; }
-        
-        .balance-card { background: #0d1117; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px solid #30363d; }
-        .digit-display { font-size: 36px; font-weight: bold; color: #ffad00; margin: 5px 0; }
-        
-        .visualizer { height: 70px; background: #0d1117; margin: 15px 0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #30363d; }
-        .terminal-log { height: 150px; overflow-y: auto; font-size: 12px; background: #010409; padding: 12px; border-radius: 6px; border: 1px solid #30363d; color: #8b949e; }
-        
-        button { width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 6px; background: #21262d; color: white; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        button:hover { background: #30363d; }
-        .btn-start { background: #238636; color: white; }
-        .btn-start.active { background: #da3633; }
-        .badge-real { background: #238636; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
-        .badge-demo { background: #f85149; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+        button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-start { background: #2ea043; color: #fff; }
+        .btn-start.active { background: #f85149; }
+        .log-container { height: 120px; overflow-y: auto; background: #0d1117; border-radius: 6px; padding: 10px; font-size: 11px; margin-top: 15px; border: 1px solid #30363d; }
+        .badge-real { background: #2ea043; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="page-connection" class="page active">
-            <div class="header"><h1>DERIV<span>QUANT</span></h1></div>
-            <div class="status-panel">
-                <div id="connection-status" class="status-offline">Establishing Connection...</div>
-                <div id="log-connection" style="font-size: 12px; margin-top: 10px;">Waiting for WebSocket...</div>
-            </div>
+        <div class="header" style="display:flex; justify-content: space-between; align-items: center;">
+            <h1>QUANT<span>PRO</span></h1>
+            <span id="acc-type" class="badge-real">REAL ACCOUNT</span>
         </div>
 
-        <div id="page-dashboard" class="page">
-            <div class="header">
-                <span id="acc-type" class="badge-real">REAL</span>
-                <button id="btn-switch" style="width: auto; padding: 4px 10px; margin: 0;">Switch to Demo</button>
-            </div>
-            <div class="balance-card">
-                <label style="font-size: 12px; color: #8b949e;">CURRENT BALANCE</label>
-                <div id="balance" class="digit-display">$0.00</div>
-            </div>
-            <button class="btn-start" onclick="showPage('page-scanner')">SCAN MARKETS</button>
+        <div style="text-align: center; margin: 15px 0;">
+            <div id="balance" style="font-size: 32px; font-weight: bold; color: #ffad00;">$0.00</div>
         </div>
 
-        <div id="page-scanner" class="page">
-            <h3>Select Logic</h3>
-            <button onclick="initBot('STR_MATCHES')">MATCHES (+800% Profit Logic)</button>
-            <button onclick="initBot('STR_EVENOOD')">EVEN/ODD (3-Streak Logic)</button>
-            <button onclick="initBot('STR_OVERUNDER')">OVER/UNDER (Percentage Trap)</button>
-            <button onclick="showPage('page-dashboard')" style="background: transparent; color: #8b949e;">Back</button>
+        <div class="scoreboard">
+            <div class="score-item">ACCU<span id="score-ACCU" class="score-val">0%</span></div>
+            <div class="score-item">E/O<span id="score-EVO" class="score-val">0%</span></div>
+            <div class="score-item">MAT<span id="score-MAT" class="score-val">0%</span></div>
+            <div class="score-item">O/U<span id="score-OVU" class="score-val">0%</span></div>
         </div>
 
-        <div id="page-terminal" class="page">
-            <div class="header">
-                <span id="active-strat" style="color: #238636; font-weight: bold;">STRATEGY</span>
-                <span id="active-symbol" style="font-size: 12px;">V100 (1S)</span>
+        <div class="digit-belt">
+            <div id="digit-cursor"></div>
+            <div class="digit-node">0</div><div class="digit-node">1</div><div class="digit-node">2</div><div class="digit-node">3</div><div class="digit-node">4</div>
+            <div class="digit-node">5</div><div class="digit-node">6</div><div class="digit-node">7</div><div class="digit-node">8</div><div class="digit-node">9</div>
+        </div>
+
+        <div class="controls">
+            <select id="strategy" style="margin-bottom: 10px; border: 1px solid #2ea043;">
+                <option value="AUTO">AI Auto-Switch (Trend Mode)</option>
+                <option value="STR_ACCU">Accumulators</option>
+                <option value="STR_EVENOOD">Even/Odd</option>
+                <option value="STR_MATCHES">Matches</option>
+                <option value="STR_OVERUNDER">Over/Under</option>
+            </select>
+
+            <div class="input-row">
+                <div><label style="font-size:10px">STAKE</label><input type="number" id="stake" value="0.35"></div>
+                <div><label style="font-size:10px">MARTINGALE</label><input type="number" id="martingale" value="2.1"></div>
             </div>
-            <div id="logic-visual" class="visualizer">AWAITING PATTERN...</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input type="number" id="stake" value="0.35" step="0.1" style="background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 6px;">
-                <input type="number" id="martingale" value="1.0" step="0.1" style="background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 6px;">
+            <div class="input-row">
+                <div><label style="font-size:10px">TAKE PROFIT</label><input type="number" id="take_profit" value="10"></div>
+                <div><label style="font-size:10px">STOP LOSS</label><input type="number" id="stop_loss" value="20"></div>
             </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #1c2128; padding: 10px; border-radius: 6px;">
+                <span style="font-size:11px">SAFE MODE (RECOVERY)</span>
+                <input type="checkbox" id="safe_mode" checked style="width:18px">
+            </div>
+
             <button id="btn-toggle" class="btn-start">START AUTOMATION</button>
-            <div id="log" class="terminal-log"></div>
+            <button onclick="switchAccount()" style="background:transparent; color:#8b949e; font-size:10px; margin-top:5px; border:1px solid #30363d;">SWITCH ACCOUNT</button>
         </div>
+
+        <div class="log-container" id="log"></div>
     </div>
     <script src="app.js"></script>
 </body>
-</html>
+                                                                                                             </html>

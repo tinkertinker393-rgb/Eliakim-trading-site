@@ -1,7 +1,7 @@
 // --- REPLACE THESE WITH YOUR DATA ---
-const APP_ID = '36300'; // Change to your registered ID from api.deriv.com
-const REAL_TOKEN = 'YOUR_REAL_TOKEN';
-const DEMO_TOKEN = 'YOUR_DEMO_TOKEN';
+const APP_ID = '119353'; // Change to your registered ID from api.deriv.com
+const REAL_TOKEN = 'A4lxJkh0sWeXD60';
+const DEMO_TOKEN = 'sI05YqeXBucWOm1';
 
 let socket, activeStrategy, isTrading = false, isContractOpen = false;
 let marketData = { R_100: [] }, absenceTable = { R_100: Array(10).fill(0) };

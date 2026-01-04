@@ -1,45 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DERIV QUANT PRO | ULTIMATE TERMINAL</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANT-PRO // MATRIX_TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #2ea043; --danger: #f85149; --bg: #0b0e14; --panel: #161b22; --border: #30363d; --text: #c9d1d9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { width: 100%; max-width: 450px; background: var(--panel); border-radius: 12px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { font-size: 22px; margin: 0; color: #fff; text-align: center; letter-spacing: 1px; }
-        h1 span { color: var(--primary); }
-        .balance-box { text-align: center; margin: 20px 0; background: #0d1117; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        #balance { font-size: 36px; font-weight: bold; color: #ffad00; }
-        #streak-info { font-size: 11px; color: #8b949e; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        :root { --neon-green: #00ff41; --neon-red: #ff3131; --neon-blue: #00d4ff; --bg: #050505; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: #fff; font-family: 'JetBrains Mono', monospace; overflow: hidden; height: 100vh; display: flex; justify-content: center; align-items: center; }
         
-        /* DIGIT BELT */
-        .digit-belt { display: flex; justify-content: space-between; background: #0d1117; padding: 15px 10px; border-radius: 50px; position: relative; margin: 20px 0; border: 1px solid var(--border); }
-        .digit-node { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #8b949e; z-index: 2; }
-        #digit-cursor { position: absolute; width: 34px; height: 34px; background: rgba(46, 160, 67, 0.2); border: 2px solid var(--primary); border-radius: 50%; top: 13px; left: 8px; transition: left 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 1; }
+        /* Matrix Canvas */
+        #matrix { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.15; }
 
-        .controls { display: flex; flex-direction: column; gap: 12px; }
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
-        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        label { font-size: 11px; color: #8b949e; font-weight: bold; }
-        input, select { background: #0d1117; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 13px; }
-        input:focus { border-color: var(--primary); outline: none; }
+        .terminal { width: 100%; max-width: 480px; background: rgba(10, 10, 10, 0.9); border: 1px solid #1a1a1a; padding: 25px; box-shadow: 0 0 50px rgba(0, 0, 0, 1); backdrop-filter: blur(5px); z-index: 10; border-radius: 2px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 15px; margin-bottom: 20px; }
+        #balance { font-size: 48px; font-weight: bold; color: var(--neon-green); text-align: center; font-variant-numeric: tabular-nums; }
         
-        button { width: 100%; padding: 16px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.3s; margin-top: 10px; }
-        .btn-start { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(46, 160, 67, 0.4); }
-        .btn-start.active { background: var(--danger); box-shadow: 0 4px 14px rgba(248, 81, 73, 0.4); }
+        .streak-hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        .hud-cell { background: #000; border: 1px solid #1a1a1a; padding: 10px; text-align: center; }
+        .hud-label { font-size: 8px; color: #555; display: block; margin-bottom: 5px; }
+        .streak-val { font-size: 18px; color: var(--neon-blue); font-weight: bold; }
+
+        .digit-belt { display: flex; justify-content: space-between; background: #000; padding: 25px 10px; border: 1px solid #222; position: relative; margin: 20px 0; }
+        .digit-node { width: 30px; text-align: center; font-size: 18px; color: #222; transition: 0.1s; z-index: 2; }
+        .active-num { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+        #digit-cursor { position: absolute; width: 35px; height: 100%; top: 0; background: rgba(0, 255, 65, 0.08); border-left: 1px solid var(--neon-green); transition: left 0.1s linear; z-index: 1; }
+
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        input, select { background: #000; border: 1px solid #222; color: var(--neon-green); padding: 12px; font-family: 'JetBrains Mono'; font-size: 11px; outline: none; width: 100%; box-sizing: border-box; }
         
-        .log-container { height: 150px; overflow-y: auto; background: #0d1117; border-radius: 8px; padding: 12px; font-size: 12px; margin-top: 20px; border: 1px solid var(--border); line-height: 1.6; }
+        .turbo-mode { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #332200; background: rgba(51, 34, 0, 0.2); margin-bottom: 15px; }
+        button { width: 100%; padding: 20px; font-family: 'JetBrains Mono'; font-weight: bold; cursor: pointer; border: none; text-transform: uppercase; letter-spacing: 2px; }
+        .btn-start { background: var(--neon-green); color: #000; }
+        .btn-stop { background: var(--neon-red); color: #fff; }
+        
+        #log { height: 100px; overflow-y: auto; font-size: 9px; background: rgba(0,0,0,0.5); border: 1px solid #1a1a1a; padding: 10px; margin-top: 20px; color: #444; }
+        .switch-acc { background: none; border: 1px solid #333; color: var(--neon-blue); padding: 4px 8px; font-size: 9px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>QUANT<span>PRO</span> MASTER</h1>
-        
-        <div class="balance-box">
-            <div id="balance">$0.00</div>
-            <div id="streak-info">Streaks: E/O: 0 | High: 0 | O/U: 0</div>
+    <canvas id="matrix"></canvas>
+    <div class="terminal">
+        <div class="header">
+            <div>
+                <div style="font-size: 10px; color: #444;">DATA_LINK_ESTABLISHED</div>
+                <button class="switch-acc" onclick="toggleAccount()">ACC_SWAP: <span id="acc-id">REAL</span></button>
+            </div>
+            <div id="status" style="color: var(--neon-blue); font-size: 10px;">IDLE</div>
+        </div>
+
+        <div id="balance">0.00</div>
+
+        <div class="streak-hud">
+            <div class="hud-cell"><span class="hud-label">E/O_STREAK</span><span id="eo-val" class="streak-val">0</span></div>
+            <div class="hud-cell"><span class="hud-label">HIGH_STREAK</span><span id="high-val" class="streak-val">0</span></div>
+            <div class="hud-cell"><span class="hud-label">OU_STREAK</span><span id="ou-val" class="streak-val">0</span></div>
         </div>
 
         <div class="digit-belt">
@@ -48,49 +62,23 @@
             <div class="digit-node">5</div><div class="digit-node">6</div><div class="digit-node">7</div><div class="digit-node">8</div><div class="digit-node">9</div>
         </div>
 
-        <div class="controls">
-            <div class="input-group">
-                <label>MASTER STRATEGY</label>
-                <select id="master_strategy">
-                    <option value="ULTRA_HYBRID">AI HYBRID (ALL LOGICS ACTIVE)</option>
-                    <option value="STR_EO_3">EVEN/ODD 3-STREAK REVERSAL</option>
-                    <option value="STR_HIGH_3">HIGH DIGIT 3-STREAK (>6)</option>
-                    <option value="STR_OU_3">OVER/UNDER 3-STREAK (<4 / >5)</option>
-                </select>
-            </div>
-
-            <div class="input-row">
-                <div class="input-group">
-                    <label>INITIAL STAKE</label>
-                    <input type="number" id="stake" value="0.35" step="0.01">
-                </div>
-                <div class="input-group">
-                    <label>MARTINGALE</label>
-                    <input type="number" id="martingale" value="2.1" step="0.1">
-                </div>
-            </div>
-
-            <div class="input-row">
-                <div class="input-group">
-                    <label>TAKE PROFIT ($)</label>
-                    <input type="number" id="take_profit" value="10.00">
-                </div>
-                <div class="input-group">
-                    <label>STOP LOSS ($)</label>
-                    <input type="number" id="stop_loss" value="20.00">
-                </div>
-            </div>
-
-            <div style="display: flex; align-items: center; justify-content: space-between; background: #1c2128; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-                <span style="font-size:12px; font-weight: bold;">SAFE MODE RECOVERY</span>
-                <input type="checkbox" id="safe_mode" checked style="width:20px; height:20px; cursor:pointer;">
-            </div>
-
-            <button id="btn-toggle" class="btn-start">ACTIVATE TRADING BOT</button>
-            <button onclick="switchAccount()" style="background:transparent; color:#8b949e; border:1px solid var(--border); font-size:11px; padding:8px;">SWITCH TO DEMO/REAL</button>
+        <div class="grid-inputs">
+            <input type="number" id="stake" placeholder="STAKE" value="0.35">
+            <input type="number" id="martingale" placeholder="MART" value="2.1">
+            <input type="number" id="max_steps" placeholder="MAX_STEP" value="5">
+            <select id="strategy">
+                <option value="HYBRID">STRAT: HYBRID_CORE</option>
+                <option value="EO">STRAT: EO_REVERSAL</option>
+            </select>
         </div>
 
-        <div class="log-container" id="log"></div>
+        <div class="turbo-mode">
+            <label style="font-size: 10px; color: #f0883e;">TURBO_PROTOCOL</label>
+            <input type="checkbox" id="turbo_mode">
+        </div>
+
+        <button id="btn-toggle" class="btn-start" onclick="toggleTrading()">START_SEQUENCE</button>
+        <div id="log">// SYSTEM_AWAITING_CMD</div>
     </div>
     <script src="app.js"></script>
 </body>

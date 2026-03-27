@@ -2,40 +2,37 @@ const APP_ID = '119353';
 const TOKENS = { REAL: 'A4lxJkh0sWeXD60', DEMO: 'sI05YqeXBucWOm1' };
 
 let socket;
-let isTrading = false;
-let activeAccount = 'REAL';
 let selectedDigit = null;
 let selectedTradeType = 'match';
+let currentStake = 10;
+let lastPrice = null;
+let priceHistory = [];
+let digitHistory = [];
 
 // Statistics
 let stats = {
+    balance: 0,
     totalStake: 0,
     totalPayout: 0,
     runsCount: 0,
     contractsLost: 0,
     contractsWon: 0,
-    totalProfit: 0,
-    balance: 0
+    totalProfit: 0
 };
 
-// Digit history
-let digitHistory = [];
-const MAX_HISTORY = 20;
+// Chart
+let chart;
+const chartCanvas = document.getElementById('chart-canvas');
 
-// Trade configuration
-let currentStake = 10;
-let lastPrice = null;
-
-// --- INITIALIZE ---
+// Initialize
 function init() {
     setupEventListeners();
+    createDigitPad();
     connect();
-    generateDigitHistory();
 }
 
-// --- EVENT LISTENERS ---
+// Setup Event Listeners
 function setupEventListeners() {
-    // Digit pad buttons handled by HTML
     // Trade type selector
     document.querySelectorAll('[data-type]').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -46,105 +43,185 @@ function setupEventListeners() {
     });
 
     // Stake input
-    document.getElementById('stake-input').addEventListener('change', (e) => {
-        currentStake = parseFloat(e.target.value) || 10;
-        updatePayout();
-    });
+    document.getElementById('stake-input').addEventListener('change', updatePayout);
+    document.getElementById('stake-input').addEventListener('input', updatePayout);
 
     // Trade buttons
-    document.getElementById('btn-match').addEventListener('click', () => executeTrade('match'));
-    document.getElementById('btn-differs').addEventListener('click', () => executeTrade('differs'));
+    document.getElementById('btn-match').addEventListener('click', () => executeTrade('DIGITEVEN'));
+    document.getElementById('btn-differs').addEventListener('click', () => executeTrade('DIGITODD'));
 }
 
-// --- WEBSOCKET CONNECTION ---
+// Create Digit Pad
+function createDigitPad() {
+    const digitPad = document.getElementById('digit-pad');
+    for (let i = 0; i < 10; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'digit-pad-btn';
+        btn.textContent = i;
+        btn.addEventListener('click', () => selectDigit(i));
+        digitPad.appendChild(btn);
+    }
+}
+
+// Select Digit
+function selectDigit(digit) {
+    document.querySelectorAll('.digit-pad-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    selectedDigit = digit;
+    updatePayout();
+}
+
+// Update Payout Display
+function updatePayout() {
+    currentStake = parseFloat(document.getElementById('stake-input').value) || 10;
+    
+    let payoutMultiplier = 1;
+    if (selectedTradeType === 'match') {
+        payoutMultiplier = 7.929; // 792.90%
+    } else {
+        payoutMultiplier = 0.096; // 9.60%
+    }
+    
+    const payout = (currentStake * payoutMultiplier).toFixed(2);
+    document.getElementById('payout-value').textContent = `${payout} USD`;
+}
+
+// Connect to Deriv WebSocket
 function connect() {
     if (socket) {
         socket.onclose = null;
         socket.close();
     }
 
-    const token = TOKENS[activeAccount];
+    const token = TOKENS.DEMO; // Use DEMO first
     socket = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
 
     socket.onopen = () => {
-        console.log('Connected');
+        console.log('Connected to Deriv');
         socket.send(JSON.stringify({ authorize: token }));
     };
 
     socket.onmessage = (msg) => {
         const data = JSON.parse(msg.data);
-        handleMessage(data);
+        handleWebsocketMessage(data);
     };
 
     socket.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('WebSocket Error:', error);
     };
 
     socket.onclose = () => {
-        console.log('Disconnected');
+        console.log('Disconnected. Reconnecting...');
         setTimeout(connect, 3000);
     };
 }
 
-// --- HANDLE WEBSOCKET MESSAGES ---
-function handleMessage(data) {
+// Handle WebSocket Messages
+function handleWebsocketMessage(data) {
     if (data.msg_type === 'authorize') {
-        stats.balance = data.authorize.balance;
-        updateBalanceDisplay();
-        socket.send(JSON.stringify({ ticks: 'R_100', subscribe: 1 }));
+        if (data.authorize) {
+            stats.balance = parseFloat(data.authorize.balance);
+            updateBalanceDisplay();
+            
+            // Subscribe to ticks
+            socket.send(JSON.stringify({ 
+                ticks: 'R_100', 
+                subscribe: 1 
+            }));
+            
+            console.log('Authorized and subscribed to ticks');
+        }
     }
 
     if (data.msg_type === 'tick') {
-        const price = data.tick.quote;
-        lastPrice = price;
-        updatePrice(price);
-
-        const digit = parseInt(price.toString().slice(-1));
-        addToDigitHistory(digit);
-        updateDigitDisplay();
-    }
-
-    if (data.msg_type === 'proposal') {
-        // Handle trade proposal
-        if (data.proposal && data.proposal.longcode) {
-            console.log('Proposal received:', data.proposal);
+        if (data.tick) {
+            lastPrice = parseFloat(data.tick.quote);
+            priceHistory.push(lastPrice);
+            if (priceHistory.length > 100) priceHistory.shift();
+            
+            updatePrice(lastPrice);
+            updateDigitHistory();
+            updateChart();
         }
     }
 
     if (data.msg_type === 'buy') {
-        // Trade executed
-        if (data.buy && data.buy.contract_id) {
-            console.log('Trade executed:', data.buy.contract_id);
-            stats.runsCount++;
-            stats.totalStake += currentStake;
-            updateStats();
+        if (data.buy) {
+            console.log('Trade placed:', data.buy.contract_id);
             subscribeToContract(data.buy.contract_id);
         }
     }
 
     if (data.msg_type === 'proposal_open_contract') {
         const contract = data.proposal_open_contract;
-        if (contract.is_sold) {
-            const profit = contract.profit || 0;
-            handleTradeResult(profit, contract);
+        if (contract && contract.is_sold) {
+            const profit = parseFloat(contract.profit) || 0;
+            handleTradeResult(profit);
         }
     }
 }
 
-// --- EXECUTE TRADE ---
-function executeTrade(type) {
+// Update Price Display
+function updatePrice(price) {
+    document.getElementById('current-price').textContent = price.toFixed(2);
+}
+
+// Update Digit History
+function updateDigitHistory() {
+    const digit = Math.floor(lastPrice) % 10;
+    digitHistory.unshift(digit);
+    if (digitHistory.length > 20) digitHistory.pop();
+    
+    const container = document.getElementById('digit-history');
+    container.innerHTML = digitHistory.map((d, i) => 
+        `<div class="digit-item ${i === 0 ? 'active' : ''}">${d}</div>`
+    ).join('');
+}
+
+// Update Chart
+function updateChart() {
+    if (!chartCanvas) return;
+    
+    const ctx = chartCanvas.getContext('2d');
+    const width = chartCanvas.width;
+    const height = chartCanvas.height;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    if (priceHistory.length < 2) return;
+    
+    const minPrice = Math.min(...priceHistory);
+    const maxPrice = Math.max(...priceHistory);
+    const priceRange = maxPrice - minPrice || 1;
+    
+    ctx.strokeStyle = '#999';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    
+    priceHistory.forEach((price, i) => {
+        const x = (i / (priceHistory.length - 1)) * width;
+        const y = height - ((price - minPrice) / priceRange) * (height - 20) - 10;
+        
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    
+    ctx.stroke();
+}
+
+// Execute Trade
+function executeTrade(contractType) {
     if (!selectedDigit && selectedDigit !== 0) {
-        alert('Please select a digit first');
+        alert('Please select a digit (0-9)');
         return;
     }
 
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        alert('Not connected to server');
+        alert('Not connected to Deriv API');
         return;
     }
 
-    const contractType = type === 'match' ? 'DIGITEVEN' : 'DIGITODD';
-    const prediction = selectedDigit % 2 === 0 ? 'even' : 'odd';
+    currentStake = parseFloat(document.getElementById('stake-input').value) || 10;
 
     const tradeRequest = {
         buy: 1,
@@ -161,9 +238,11 @@ function executeTrade(type) {
     };
 
     socket.send(JSON.stringify(tradeRequest));
+    stats.totalStake += currentStake;
+    updateStats();
 }
 
-// --- SUBSCRIBE TO CONTRACT ---
+// Subscribe to Contract
 function subscribeToContract(contractId) {
     socket.send(JSON.stringify({
         proposal_open_contract: 1,
@@ -172,74 +251,46 @@ function subscribeToContract(contractId) {
     }));
 }
 
-// --- HANDLE TRADE RESULT ---
-function handleTradeResult(profit, contract) {
+// Handle Trade Result
+function handleTradeResult(profit) {
     if (profit > 0) {
         stats.contractsWon++;
-        stats.totalPayout += (currentStake + profit);
         stats.totalProfit += profit;
+        showNotification(`+${profit.toFixed(2)} USD WON`, '#4caf50');
     } else {
         stats.contractsLost++;
-        stats.totalPayout += currentStake;
         stats.totalProfit += profit;
+        showNotification(`${profit.toFixed(2)} USD LOST`, '#f44336');
     }
 
     stats.balance += profit;
+    stats.totalPayout += (currentStake + Math.max(profit, 0));
+    stats.runsCount++;
+
     updateBalanceDisplay();
     updateStats();
-
-    // Flash notification
-    showNotification(profit > 0 ? `+${profit.toFixed(2)} USD` : `-${Math.abs(profit).toFixed(2)} USD`, 
-                     profit > 0 ? '#00cc66' : '#ff4444');
 }
 
-// --- UI UPDATES ---
-function updatePrice(price) {
-    document.getElementById('current-price').textContent = price.toFixed(2);
-}
-
+// Update Balance Display
 function updateBalanceDisplay() {
     document.getElementById('balance-display').textContent = `${stats.balance.toFixed(2)} USD`;
 }
 
-function updatePayout() {
-    const payoutRatio = selectedTradeType === 'match' ? 7.929 : 0.096;
-    const payout = (currentStake * payoutRatio).toFixed(2);
-    document.getElementById('payout-value').textContent = `${payout} USD`;
-}
-
+// Update Statistics Display
 function updateStats() {
     document.getElementById('stat-stake').textContent = `${stats.totalStake.toFixed(2)} USD`;
     document.getElementById('stat-payout').textContent = `${stats.totalPayout.toFixed(2)} USD`;
     document.getElementById('stat-runs').textContent = stats.runsCount;
     document.getElementById('stat-lost').textContent = stats.contractsLost;
     document.getElementById('stat-won').textContent = stats.contractsWon;
-
-    const profitColor = stats.totalProfit >= 0 ? '#00cc66' : '#ff4444';
+    
+    const profitColor = stats.totalProfit >= 0 ? '#4caf50' : '#f44336';
     const profitElement = document.getElementById('stat-profit');
     profitElement.textContent = `${stats.totalProfit.toFixed(2)} USD`;
     profitElement.style.color = profitColor;
 }
 
-function addToDigitHistory(digit) {
-    digitHistory.unshift(digit);
-    if (digitHistory.length > MAX_HISTORY) {
-        digitHistory.pop();
-    }
-}
-
-function updateDigitDisplay() {
-    const container = document.getElementById('digit-history');
-    container.innerHTML = digitHistory.map((digit, index) => 
-        `<div class="digit-item ${index === 0 ? 'active' : ''}">${digit}</div>`
-    ).join('');
-}
-
-function generateDigitHistory() {
-    digitHistory = Array.from({ length: MAX_HISTORY }, () => Math.floor(Math.random() * 10));
-    updateDigitDisplay();
-}
-
+// Show Notification
 function showNotification(message, color) {
     const notif = document.createElement('div');
     notif.style.cssText = `
@@ -248,7 +299,7 @@ function showNotification(message, color) {
         right: 20px;
         background: ${color};
         color: white;
-        padding: 12px 20px;
+        padding: 15px 20px;
         border-radius: 4px;
         font-weight: 600;
         z-index: 1000;
@@ -259,29 +310,5 @@ function showNotification(message, color) {
     setTimeout(() => notif.remove(), 3000);
 }
 
-// --- SELECT DIGIT FUNCTION ---
-window.selectDigit = function(digit) {
-    document.querySelectorAll('.digit-pad-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    selectedDigit = digit;
-    updatePayout();
-};
-
-// --- ADD ANIMATION ---
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(100px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-`;
-document.head.appendChild(style);
-
-// Initialize
-init();
+// Initialize on load
+window.addEventListener('DOMContentLoaded', init);

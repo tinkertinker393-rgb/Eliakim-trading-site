@@ -6,16 +6,21 @@
     <title>Deriv Trading Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'JetBrains Mono', monospace; 
-            background: #f5f6f8; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #f5f6f8;
             color: #333;
             overflow: hidden;
             height: 100vh;
         }
 
-        /* TOP HEADER */
+        /* HEADER */
         .header {
             background: white;
             border-bottom: 1px solid #e0e0e0;
@@ -33,7 +38,11 @@
             gap: 40px;
         }
 
-        .logo { font-weight: 700; font-size: 16px; color: #e91e63; }
+        .logo {
+            font-weight: 700;
+            font-size: 16px;
+            color: #e91e63;
+        }
 
         .nav-tabs {
             display: flex;
@@ -48,6 +57,7 @@
             padding: 20px 0;
             border-bottom: 2px solid transparent;
             transition: all 0.3s;
+            cursor: pointer;
         }
 
         .nav-tabs a.active {
@@ -85,12 +95,11 @@
         .container {
             display: flex;
             height: calc(100vh - 60px);
-            gap: 0;
         }
 
-        /* LEFT SIDEBAR */
+        /* SIDEBAR */
         .sidebar {
-            width: 250px;
+            width: 240px;
             background: white;
             border-right: 1px solid #e0e0e0;
             overflow-y: auto;
@@ -103,32 +112,32 @@
         }
 
         .sidebar-title {
-            font-size: 11px;
+            font-size: 10px;
             color: #999;
             text-transform: uppercase;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 12px;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
 
         .sidebar-item {
             padding: 10px 12px;
             font-size: 12px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 3px;
             margin-bottom: 4px;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .sidebar-item:hover {
-            background: #f5f5f5;
+            background: #f0f0f0;
         }
 
         .sidebar-item.active {
-            background: #e8f4f8;
+            background: #e3f2fd;
             color: #0066cc;
             font-weight: 600;
         }
@@ -148,37 +157,36 @@
             padding: 12px 20px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
             font-size: 12px;
         }
 
         .chart-area {
             flex: 1;
             display: flex;
-            gap: 0;
             overflow: hidden;
         }
 
-        /* CHART */
+        /* CHART PANEL */
         .chart-panel {
             flex: 1;
             background: white;
             border-right: 1px solid #e0e0e0;
             padding: 20px;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .chart-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             margin-bottom: 15px;
             color: #333;
         }
 
         .mock-chart {
-            width: 100%;
-            height: 300px;
-            background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+            flex: 1;
+            background: #f9f9f9;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             display: flex;
@@ -186,43 +194,39 @@
             justify-content: center;
             color: #999;
             font-size: 12px;
+            min-height: 250px;
         }
 
         .digit-history {
             margin-top: 15px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
         .digit-item {
-            width: 35px;
-            height: 35px;
-            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+            border-radius: 3px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             background: #f0f0f0;
-            cursor: pointer;
             border: 1px solid #ddd;
-            transition: all 0.2s;
-        }
-
-        .digit-item:hover {
-            background: #e0e0e0;
+            cursor: pointer;
         }
 
         .digit-item.active {
-            background: #00cc00;
+            background: #4caf50;
             color: white;
-            border-color: #00aa00;
+            border-color: #388e3c;
         }
 
         /* RIGHT PANEL */
         .right-panel {
-            width: 320px;
+            width: 300px;
             background: white;
             border-left: 1px solid #e0e0e0;
             display: flex;
@@ -231,23 +235,22 @@
         }
 
         .panel-header {
-            padding: 20px;
+            padding: 15px 20px;
             border-bottom: 1px solid #e0e0e0;
         }
 
         .panel-tabs {
             display: flex;
             gap: 15px;
-            border-bottom: 1px solid #e0e0e0;
-            margin-bottom: 15px;
+            font-size: 11px;
         }
 
         .panel-tab {
-            padding: 12px 0;
-            font-size: 12px;
+            padding: 8px 0;
             cursor: pointer;
             border-bottom: 2px solid transparent;
-            color: #666;
+            color: #999;
+            font-weight: 600;
             transition: all 0.2s;
         }
 
@@ -257,26 +260,37 @@
         }
 
         .trade-section {
-            padding: 20px;
+            padding: 15px 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .input-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #999;
+            margin-bottom: 8px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .trade-type-selector {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
         .trade-type-btn {
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
             font-size: 11px;
             font-weight: 600;
-            text-align: center;
-            transition: all 0.2s;
             background: white;
+            transition: all 0.2s;
         }
 
         .trade-type-btn:hover {
@@ -293,24 +307,24 @@
         .digit-pad {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            margin-bottom: 20px;
+            gap: 5px;
+            margin-bottom: 15px;
         }
 
         .digit-pad-btn {
             aspect-ratio: 1;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 13px;
-            transition: all 0.2s;
+            font-size: 12px;
             background: white;
+            transition: all 0.2s;
         }
 
         .digit-pad-btn:hover {
-            background: #f0f0f0;
             border-color: #0066cc;
+            background: #f5f5f5;
         }
 
         .digit-pad-btn.active {
@@ -320,88 +334,89 @@
         }
 
         .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #666;
-            margin-bottom: 6px;
-            display: block;
-            text-transform: uppercase;
+            margin-bottom: 12px;
         }
 
         .input-group input,
         .input-group select {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 12px;
+            border-radius: 3px;
+            font-size: 11px;
             font-family: 'JetBrains Mono', monospace;
-        }
-
-        .trade-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn-match {
-            padding: 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .btn-match.green {
-            background: #00cc66;
-            color: white;
-        }
-
-        .btn-match.red {
-            background: #ff4444;
-            color: white;
-        }
-
-        .btn-match:hover {
-            opacity: 0.9;
         }
 
         .payout-info {
             background: #f5f5f5;
             padding: 10px;
-            border-radius: 4px;
+            border-radius: 3px;
             font-size: 11px;
-            margin-top: 10px;
             text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .trade-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn-match {
+            padding: 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 11px;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-match.green {
+            background: #4caf50;
+        }
+
+        .btn-match.green:hover {
+            background: #45a049;
+        }
+
+        .btn-match.red {
+            background: #f44336;
+        }
+
+        .btn-match.red:hover {
+            background: #da190b;
         }
 
         .stats-box {
             background: #f5f5f5;
-            padding: 12px;
-            border-radius: 4px;
-            margin-top: 10px;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 10px;
         }
 
         .stat-item {
             display: flex;
             justify-content: space-between;
-            font-size: 11px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            padding: 4px 0;
         }
 
         .stat-item:last-child {
             margin-bottom: 0;
         }
 
-        .stat-label { color: #666; }
-        .stat-value { font-weight: 600; color: #333; }
+        .stat-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -423,7 +438,7 @@
 
     <!-- MAIN CONTAINER -->
     <div class="container">
-        <!-- LEFT SIDEBAR -->
+        <!-- SIDEBAR -->
         <div class="sidebar">
             <div class="sidebar-section">
                 <div class="sidebar-title">Markets</div>
@@ -443,16 +458,19 @@
         <div class="main-content">
             <div class="sub-header">
                 <span>Volatility 100 (1s) Index</span>
-                <span id="current-price">9862.20</span>
-                <span id="price-change" style="color: #ff4444;">-0.30 (0.00%)</span>
+                <span id="current-price" style="font-weight: 600;">9862.20</span>
+                <span id="price-change" style="color: #f44336;">-0.30 (0.00%)</span>
             </div>
 
             <div class="chart-area">
-                <!-- CHART PANEL -->
+                <!-- CHART -->
                 <div class="chart-panel">
                     <div class="chart-title">Last Digit Prediction</div>
                     <div class="mock-chart">
-                        <canvas id="chart"></canvas>
+                        <svg width="100%" height="100%" style="max-width: 400px;">
+                            <polyline points="10,80 30,60 50,70 70,40 90,50 110,30 130,45 150,25" 
+                                      style="fill:none;stroke:#999;stroke-width:1" />
+                        </svg>
                     </div>
                     <div class="digit-history" id="digit-history"></div>
                 </div>
@@ -468,8 +486,8 @@
                     </div>
 
                     <div class="trade-section">
-                        <!-- TRADE TYPES -->
-                        <div style="margin-bottom: 20px;">
+                        <!-- TRADE TYPE -->
+                        <div>
                             <label class="input-label">Trade Type</label>
                             <div class="trade-type-selector">
                                 <button class="trade-type-btn active" data-type="match">Matches</button>
@@ -478,26 +496,26 @@
                         </div>
 
                         <!-- DIGIT PAD -->
-                        <div style="margin-bottom: 20px;">
+                        <div>
                             <label class="input-label">Last Digit Prediction</label>
                             <div class="digit-pad" id="digit-pad"></div>
                         </div>
 
-                        <!-- STAKE INPUT -->
+                        <!-- STAKE -->
                         <div class="input-group">
                             <label class="input-label">Stake (USD)</label>
                             <input type="number" id="stake-input" value="10" min="0.01" step="0.01">
                         </div>
 
-                        <!-- PAYOUT INFO -->
-                        <div class="payout-info" id="payout-info">
-                            Payout: <strong id="payout-value">0.00 USD</strong>
+                        <!-- PAYOUT -->
+                        <div class="payout-info">
+                            Payout: <strong id="payout-value">79.29 USD</strong>
                         </div>
 
                         <!-- TRADE BUTTONS -->
                         <div class="trade-buttons">
-                            <button class="btn-match green" id="btn-match">💚 Matches<br><span style="font-size: 10px;">792.90%</span></button>
-                            <button class="btn-match red" id="btn-differs">❌ Differs<br><span style="font-size: 10px;">9.60%</span></button>
+                            <button class="btn-match green" id="btn-match">💚 Matches<br><span style="font-size: 9px;">792.90%</span></button>
+                            <button class="btn-match red" id="btn-differs">❌ Differs<br><span style="font-size: 9px;">9.60%</span></button>
                         </div>
 
                         <!-- STATS -->
@@ -527,45 +545,12 @@
                                 <span class="stat-value" id="stat-profit">0.00 USD</span>
                             </div>
                         </div>
-
-                        <button style="width: 100%; margin-top: 15px; padding: 10px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Reset</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Initialize digit pad -->
-    <script>
-        // Create digit pad
-        const digitPad = document.getElementById('digit-pad');
-        for (let i = 0; i < 10; i++) {
-            const btn = document.createElement('button');
-            btn.className = 'digit-pad-btn';
-            btn.textContent = i;
-            btn.onclick = () => selectDigit(i);
-            digitPad.appendChild(btn);
-        }
-
-        let selectedDigit = null;
-
-        function selectDigit(digit) {
-            document.querySelectorAll('.digit-pad-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            selectedDigit = digit;
-            updatePayout();
-        }
-
-        function updatePayout() {
-            const stake = parseFloat(document.getElementById('stake-input').value) || 0;
-            const payout = (stake * 7.929).toFixed(2);
-            document.getElementById('payout-value').textContent = payout + ' USD';
-        }
-
-        document.getElementById('stake-input').addEventListener('input', updatePayout);
-
-        // Initialize with some dummy data
-        updatePayout();
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

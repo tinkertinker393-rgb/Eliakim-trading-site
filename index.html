@@ -3,128 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deriv Multi-Index Streamer</title>
+    <title>DBot - Custom Integrated Site</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .price-up { color: #00a86b; animation: flash-green 0.5s; }
-        .price-down { color: #ef4444; animation: flash-red 0.5s; }
-        @keyframes flash-green { from { background: rgba(0, 168, 107, 0.2); } to { background: transparent; } }
-        @keyframes flash-red { from { background: rgba(239, 68, 68, 0.2); } to { background: transparent; } }
-        .index-card { transition: all 0.2s ease; border: 1px solid #e5e7eb; }
-        .index-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        :root { --deriv-red: #ff444f; --deriv-dark: #0e2433; --deriv-bg: #f2f3f4; }
+        body { background-color: var(--deriv-bg); font-family: 'ibm-plex-sans', sans-serif; overflow: hidden; }
+        .active-tab { border-bottom: 3px solid var(--deriv-red); color: #333; font-weight: bold; }
+        
+        /* Block Styling exactly like Screenshot 111105 */
+        .dbot-block { background: white; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 12px; border: 1px solid #d6dadc; min-width: 300px; }
+        .block-header { background: var(--deriv-dark); color: white; padding: 6px 12px; font-size: 12px; border-radius: 4px 4px 0 0; display: flex; align-items: center; }
+        .block-header i { margin-right: 8px; font-size: 10px; }
+        .block-content { padding: 10px; font-size: 11px; color: #333; }
+        .block-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        select, input { border: 1px solid #d6dadc; border-radius: 3px; padding: 2px 4px; background: #fff; outline: none; }
+        
+        /* Summary Panel Sidebar */
+        .right-panel { background: white; border-left: 1px solid #d6dadc; width: 320px; display: flex; flex-col; height: calc(100vh - 100px); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; border-top: 1px solid #eee; background: #f9fafb; }
+        .stat-box { font-size: 10px; color: #999; text-transform: uppercase; font-weight: bold; }
+        .stat-val { font-size: 14px; color: #333; font-family: monospace; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="flex flex-col h-screen">
 
-    <nav class="bg-[#0e2433] text-white p-4 flex justify-between items-center shadow-lg">
-        <div class="flex items-center space-x-4">
-            <h1 class="text-xl font-bold tracking-tight">DERIV <span class="text-red-500">LIVE</span> FEED</h1>
-            <span id="conn-status" class="text-[10px] bg-red-500 px-2 py-0.5 rounded-full uppercase font-bold">Offline</span>
+    <nav class="bg-white border-b px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center space-x-6">
+            <div class="text-red-500 font-bold text-2xl">d</div>
+            <div class="flex space-x-4 text-sm text-gray-600 font-medium">
+                <button class="hover:text-black">Trader's Hub</button>
+                <button class="hover:text-black">Cashier</button>
+                <button class="hover:text-black">Reports</button>
+            </div>
+            <div class="bg-gray-100 px-2 py-1 rounded flex items-center text-xs font-bold">
+                <span class="bg-red-500 text-white rounded px-1 mr-2 text-[10px]">DB</span> deriv Bot
+                <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
+            </div>
         </div>
-        <div class="text-right">
-            <div id="balance-display" class="text-green-400 font-mono font-bold">Connecting...</div>
-            <div id="account-id" class="text-[10px] text-gray-400">---</div>
+        <div class="flex items-center space-x-4">
+            <button class="bg-red-500 text-white px-4 py-1.5 rounded font-bold text-sm">Deposit</button>
+            <div class="flex items-center border rounded px-2 py-1">
+                <img src="https://flagcdn.com/w20/us.png" class="w-4 h-3 mr-2">
+                <span id="top-balance" class="font-bold text-sm text-green-600">0.00 USD</span>
+                <i class="fas fa-chevron-down ml-2 text-xs text-gray-400"></i>
+            </div>
+            <i class="fas fa-user-circle text-2xl text-gray-400"></i>
         </div>
     </nav>
 
-    <div class="p-6">
-        <div class="mb-6 flex justify-between items-end">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-800">Synthetic Indices</h2>
-                <p class="text-gray-500 text-sm">Real-time tick data across all active derived markets.</p>
-            </div>
-            <div class="text-xs text-gray-400 italic">Auto-refreshing via WebSocket</div>
-        </div>
+    <div class="bg-white border-b flex px-6 space-x-8 text-sm text-gray-500">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-3 px-2 active-tab"><i class="fas fa-th-large mr-2"></i>Dashboard</button>
+        <button onclick="switchTab('botbuilder')" id="tab-botbuilder" class="py-3 px-2 hover:text-black"><i class="fas fa-robot mr-2"></i>Bot Builder</button>
+        <button onclick="switchTab('charts')" id="tab-charts" class="py-3 px-2 hover:text-black"><i class="fas fa-chart-line mr-2"></i>Charts</button>
+    </div>
 
-        <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div class="col-span-full py-20 text-center text-gray-400">
-                <div class="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent text-blue-600 rounded-full mb-4"></div>
-                <p>Fetching active market symbols...</p>
+    <div class="flex flex-1 overflow-hidden">
+        
+        <aside id="blocks-menu" class="w-64 bg-white border-r p-4 hidden">
+            <button class="w-full bg-red-500 text-white py-2 rounded font-bold mb-4 text-sm">Quick strategy</button>
+            <div class="text-xs font-bold text-gray-400 uppercase mb-4 flex justify-between">Blocks menu <i class="fas fa-chevron-up"></i></div>
+            <div class="space-y-3 text-sm text-gray-700">
+                <div class="flex items-center justify-between p-1 hover:bg-gray-50 cursor-pointer">Trade parameters <i class="fas fa-chevron-right text-[10px]"></i></div>
+                <div class="flex items-center justify-between p-1 hover:bg-gray-50 cursor-pointer">Purchase conditions <i class="fas fa-chevron-right text-[10px]"></i></div>
+                <div class="flex items-center justify-between p-1 hover:bg-gray-50 cursor-pointer">Sell conditions (optional) <i class="fas fa-chevron-right text-[10px]"></i></div>
             </div>
-        </div>
+        </aside>
+
+        <main class="flex-1 p-6 overflow-auto relative" id="main-view">
+            <div id="view-dashboard" class="flex flex-col items-center justify-center h-full">
+                <h2 class="text-xl font-bold mb-2">Load or build your bot</h2>
+                <div class="flex space-x-6 mt-8">
+                    <div class="w-24 text-center"><i class="fas fa-desktop text-4xl text-blue-900 mb-2"></i><p class="text-[10px] font-bold">My computer</p></div>
+                    <div class="w-24 text-center"><i class="fab fa-google-drive text-4xl text-green-500 mb-2"></i><p class="text-[10px] font-bold">Google Drive</p></div>
+                    <div class="w-24 text-center"><i class="fas fa-puzzle-piece text-4xl text-blue-400 mb-2"></i><p class="text-[10px] font-bold">Bot builder</p></div>
+                    <div class="w-24 text-center"><i class="fas fa-th-large text-4xl text-teal-400 mb-2"></i><p class="text-[10px] font-bold">Quick strategy</p></div>
+                </div>
+            </div>
+
+            <div id="view-botbuilder" class="hidden h-full">
+                <div class="dbot-block w-[450px]">
+                    <div class="block-header"><i class="fas fa-cog"></i> 1. Trade parameters</div>
+                    <div class="block-content">
+                        <div class="block-row">Market: <select class="flex-1"><option>Derived</option></select> <select class="flex-1"><option>Continuous Indices</option></select></div>
+                        <div class="block-row"><select class="w-full" id="market-select"><option value="1HZ100V">Volatility 100 (1s) Index</option><option value="1HZ10V">Volatility 10 (1s) Index</option></select></div>
+                        <div class="block-row">Trade Type: <select class="flex-1"><option>Up/Down</option></select> <select class="flex-1"><option>Rise/Fall</option></select></div>
+                        <hr class="my-2">
+                        <div class="block-row">Duration: <select><option>Ticks</option></select> <input type="number" value="1" class="w-12"> Stake: <input type="number" value="0.35" class="w-16"> USD</div>
+                    </div>
+                </div>
+                <div class="dbot-block w-[250px] border-l-4 border-blue-400">
+                    <div class="block-header" style="background:#1e3a8a">2. Purchase conditions</div>
+                    <div class="block-content">
+                        <div class="block-row">Purchase: <select class="w-full text-blue-600 font-bold"><option>Rise</option><option>Fall</option></select></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-charts" class="hidden h-full bg-white rounded border">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <div class="font-bold" id="chart-title">Volatility 100 (1s) Index</div>
+                    <div class="text-xl font-mono font-bold" id="live-price">0.0000</div>
+                </div>
+                <div class="h-full flex items-center justify-center text-gray-300">
+                    <i class="fas fa-chart-area text-6xl"></i>
+                </div>
+            </div>
+        </main>
+
+        <aside class="right-panel">
+            <div class="flex text-[10px] font-bold border-b text-gray-400">
+                <button class="flex-1 py-3 border-b-2 border-red-500 text-red-500">SUMMARY</button>
+                <button class="flex-1 py-3">TRANSACTIONS</button>
+                <button class="flex-1 py-3">JOURNAL</button>
+            </div>
+            <div class="flex-1 p-6 text-center flex flex-col items-center justify-center">
+                <p class="text-xs text-gray-400 leading-relaxed" id="status-msg">When you're ready to trade, hit <b>Run</b>. You'll be able to track your bot's performance here.</p>
+            </div>
+            
+            <div class="stat-grid">
+                <div class="stat-box">Total Stake<br><span class="stat-val text-black">0.00 USD</span></div>
+                <div class="stat-box">Total Payout<br><span class="stat-val text-black">0.00 USD</span></div>
+                <div class="stat-box">Contracts Lost<br><span class="stat-val text-red-500">0</span></div>
+                <div class="stat-box">Contracts Won<br><span class="stat-val text-green-500">0</span></div>
+            </div>
+            
+            <div class="p-4 bg-gray-50 border-t">
+                <button id="mainBtn" onclick="toggleBot()" class="w-full bg-[#4bb4b3] text-white py-2 rounded font-bold hover:bg-teal-600">Run</button>
+                <button id="resetBtn" class="w-full mt-2 border py-1.5 rounded text-xs font-bold text-gray-600">Reset</button>
+            </div>
+        </aside>
     </div>
 
     <script>
         const APP_ID = '119353';
         const TOKEN = 'sI05YqeXBucWOm1'; // Demo Token
-        const marketGrid = document.getElementById('market-grid');
-        let ws;
-        const prices = {};
+        let ws, isRunning = false;
 
-        function init() {
+        function switchTab(tab) {
+            ['dashboard', 'botbuilder', 'charts'].forEach(t => {
+                document.getElementById('view-' + t).classList.add('hidden');
+                document.getElementById('tab-' + t).classList.remove('active-tab');
+            });
+            document.getElementById('view-' + tab).classList.remove('hidden');
+            document.getElementById('tab-' + tab).classList.add('active-tab');
+            document.getElementById('blocks-menu').style.display = (tab === 'botbuilder') ? 'block' : 'none';
+        }
+
+        function initWS() {
             ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`);
-
-            ws.onopen = () => {
-                document.getElementById('conn-status').innerText = "Online";
-                document.getElementById('conn-status').classList.replace('bg-red-500', 'bg-green-500');
-                ws.send(JSON.stringify({ authorize: TOKEN }));
-            };
-
+            ws.onopen = () => ws.send(JSON.stringify({ authorize: TOKEN }));
             ws.onmessage = (msg) => {
                 const data = JSON.parse(msg.data);
-
                 if (data.msg_type === 'authorize') {
-                    document.getElementById('balance-display').innerText = `${data.authorize.balance} ${data.authorize.currency}`;
-                    document.getElementById('account-id').innerText = data.authorize.loginid;
-                    
-                    // Step 1: Request all active symbols
-                    ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
+                    document.getElementById('top-balance').innerText = `${data.authorize.balance} USD`;
+                    ws.send(JSON.stringify({ ticks: '1HZ100V', subscribe: 1 }));
                 }
-
-                if (data.msg_type === 'active_symbols') {
-                    marketGrid.innerHTML = ''; // Clear loader
-                    // Filter for Synthetic Indices (Derived)
-                    const indices = data.active_symbols.filter(s => s.market === 'synthetic_index');
-                    
-                    indices.forEach(symbol => {
-                        createCard(symbol);
-                        // Step 2: Subscribe to ticks for this symbol
-                        ws.send(JSON.stringify({ ticks: symbol.symbol, subscribe: 1 }));
-                    });
-                }
-
                 if (data.msg_type === 'tick') {
-                    updatePrice(data.tick);
+                    document.getElementById('live-price').innerText = data.tick.quote;
                 }
             };
         }
 
-        function createCard(s) {
-            const card = document.createElement('div');
-            card.id = `card-${s.symbol}`;
-            card.className = "index-card bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between h-32";
-            card.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${s.symbol}</span>
-                    <span class="bg-blue-50 text-blue-600 text-[9px] px-2 py-0.5 rounded font-bold">LIVE</span>
-                </div>
-                <div class="font-bold text-gray-700 text-sm truncate mb-1">${s.display_name}</div>
-                <div id="price-${s.symbol}" class="text-xl font-mono font-bold text-gray-900 transition-colors">0.0000</div>
-            `;
-            marketGrid.appendChild(card);
-        }
-
-        function updatePrice(tick) {
-            const el = document.getElementById(`price-${tick.symbol}`);
-            if (!el) return;
-
-            const oldPrice = prices[tick.symbol] || 0;
-            const newPrice = tick.quote;
-            
-            el.innerText = newPrice;
-            
-            // Visual feedback for price movement
-            el.classList.remove('price-up', 'price-down');
-            if (newPrice > oldPrice) {
-                el.classList.add('price-up');
-            } else if (newPrice < oldPrice) {
-                el.classList.add('price-down');
+        function toggleBot() {
+            isRunning = !isRunning;
+            const btn = document.getElementById('mainBtn');
+            const status = document.getElementById('status-msg');
+            if (isRunning) {
+                btn.innerText = "Stop";
+                btn.style.backgroundColor = "#ff444f";
+                status.innerHTML = "<span class='text-green-500 font-bold'>Bot is running...</span><br>Monitoring Volatility 100 Index";
+            } else {
+                btn.innerText = "Run";
+                btn.style.backgroundColor = "#4bb4b3";
+                status.innerText = "Bot stopped.";
             }
-            
-            prices[tick.symbol] = newPrice;
         }
 
-        init();
+        initWS();
     </script>
 </body>
 </html>

@@ -1,85 +1,571 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUANT-PRO // MATRIX_TERMINAL</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Trading Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --neon-green: #00ff41; --neon-red: #ff3131; --neon-blue: #00d4ff; --bg: #050505; }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: #fff; font-family: 'JetBrains Mono', monospace; overflow: hidden; height: 100vh; display: flex; justify-content: center; align-items: center; }
-        
-        /* Matrix Canvas */
-        #matrix { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.15; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'JetBrains Mono', monospace; 
+            background: #f5f6f8; 
+            color: #333;
+            overflow: hidden;
+            height: 100vh;
+        }
 
-        .terminal { width: 100%; max-width: 480px; background: rgba(10, 10, 10, 0.9); border: 1px solid #1a1a1a; padding: 25px; box-shadow: 0 0 50px rgba(0, 0, 0, 1); backdrop-filter: blur(5px); z-index: 10; border-radius: 2px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 15px; margin-bottom: 20px; }
-        #balance { font-size: 48px; font-weight: bold; color: var(--neon-green); text-align: center; font-variant-numeric: tabular-nums; }
-        
-        .streak-hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
-        .hud-cell { background: #000; border: 1px solid #1a1a1a; padding: 10px; text-align: center; }
-        .hud-label { font-size: 8px; color: #555; display: block; margin-bottom: 5px; }
-        .streak-val { font-size: 18px; color: var(--neon-blue); font-weight: bold; }
+        /* TOP HEADER */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
 
-        .digit-belt { display: flex; justify-content: space-between; background: #000; padding: 25px 10px; border: 1px solid #222; position: relative; margin: 20px 0; }
-        .digit-node { width: 30px; text-align: center; font-size: 18px; color: #222; transition: 0.1s; z-index: 2; }
-        .active-num { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
-        #digit-cursor { position: absolute; width: 35px; height: 100%; top: 0; background: rgba(0, 255, 65, 0.08); border-left: 1px solid var(--neon-green); transition: left 0.1s linear; z-index: 1; }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
 
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        input, select { background: #000; border: 1px solid #222; color: var(--neon-green); padding: 12px; font-family: 'JetBrains Mono'; font-size: 11px; outline: none; width: 100%; box-sizing: border-box; }
-        
-        .turbo-mode { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #332200; background: rgba(51, 34, 0, 0.2); margin-bottom: 15px; }
-        button { width: 100%; padding: 20px; font-family: 'JetBrains Mono'; font-weight: bold; cursor: pointer; border: none; text-transform: uppercase; letter-spacing: 2px; }
-        .btn-start { background: var(--neon-green); color: #000; }
-        .btn-stop { background: var(--neon-red); color: #fff; }
-        
-        #log { height: 100px; overflow-y: auto; font-size: 9px; background: rgba(0,0,0,0.5); border: 1px solid #1a1a1a; padding: 10px; margin-top: 20px; color: #444; }
-        .switch-acc { background: none; border: 1px solid #333; color: var(--neon-blue); padding: 4px 8px; font-size: 9px; cursor: pointer; }
+        .logo { font-weight: 700; font-size: 16px; color: #e91e63; }
+
+        .nav-tabs {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-tabs a {
+            text-decoration: none;
+            color: #666;
+            font-size: 13px;
+            padding: 20px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-tabs a.active {
+            color: #000;
+            border-bottom-color: #e91e63;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .balance-display {
+            background: #e8f4f8;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #0066cc;
+            font-weight: 600;
+        }
+
+        .deposit-btn {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+            gap: 0;
+        }
+
+        /* LEFT SIDEBAR */
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .sidebar-section {
+            padding: 0 15px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-item {
+            padding: 10px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-item:hover {
+            background: #f5f5f5;
+        }
+
+        .sidebar-item.active {
+            background: #e8f4f8;
+            color: #0066cc;
+            font-weight: 600;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fafafa;
+            overflow: hidden;
+        }
+
+        .sub-header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 12px;
+        }
+
+        .chart-area {
+            flex: 1;
+            display: flex;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        /* CHART */
+        .chart-panel {
+            flex: 1;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .mock-chart {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .digit-history {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .digit-item {
+            width: 35px;
+            height: 35px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f0f0f0;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            transition: all 0.2s;
+        }
+
+        .digit-item:hover {
+            background: #e0e0e0;
+        }
+
+        .digit-item.active {
+            background: #00cc00;
+            color: white;
+            border-color: #00aa00;
+        }
+
+        /* RIGHT PANEL */
+        .right-panel {
+            width: 320px;
+            background: white;
+            border-left: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .panel-tabs {
+            display: flex;
+            gap: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 15px;
+        }
+
+        .panel-tab {
+            padding: 12px 0;
+            font-size: 12px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .panel-tab.active {
+            color: #e91e63;
+            border-bottom-color: #e91e63;
+        }
+
+        .trade-section {
+            padding: 20px;
+        }
+
+        .trade-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .trade-type-btn {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .trade-type-btn:hover {
+            border-color: #0066cc;
+            color: #0066cc;
+        }
+
+        .trade-type-btn.active {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .digit-pad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .digit-pad-btn {
+            aspect-ratio: 1;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .digit-pad-btn:hover {
+            background: #f0f0f0;
+            border-color: #0066cc;
+        }
+
+        .digit-pad-btn.active {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 6px;
+            display: block;
+            text-transform: uppercase;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .trade-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-match {
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-match.green {
+            background: #00cc66;
+            color: white;
+        }
+
+        .btn-match.red {
+            background: #ff4444;
+            color: white;
+        }
+
+        .btn-match:hover {
+            opacity: 0.9;
+        }
+
+        .payout-info {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .stats-box {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label { color: #666; }
+        .stat-value { font-weight: 600; color: #333; }
     </style>
 </head>
 <body>
-    <canvas id="matrix"></canvas>
-    <div class="terminal">
-        <div class="header">
-            <div>
-                <div style="font-size: 10px; color: #444;">DATA_LINK_ESTABLISHED</div>
-                <button class="switch-acc" onclick="toggleAccount()">ACC_SWAP: <span id="acc-id">REAL</span></button>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">DT</div>
+            <div class="nav-tabs">
+                <a href="#" class="active">Trader's Hub</a>
+                <a href="#">Cashier</a>
+                <a href="#">Reports</a>
             </div>
-            <div id="status" style="color: var(--neon-blue); font-size: 10px;">IDLE</div>
         </div>
-
-        <div id="balance">0.00</div>
-
-        <div class="streak-hud">
-            <div class="hud-cell"><span class="hud-label">E/O_STREAK</span><span id="eo-val" class="streak-val">0</span></div>
-            <div class="hud-cell"><span class="hud-label">HIGH_STREAK</span><span id="high-val" class="streak-val">0</span></div>
-            <div class="hud-cell"><span class="hud-label">OU_STREAK</span><span id="ou-val" class="streak-val">0</span></div>
+        <div class="header-right">
+            <div class="balance-display" id="balance-display">0.00 USD</div>
+            <button class="deposit-btn">Deposit</button>
         </div>
-
-        <div class="digit-belt">
-            <div id="digit-cursor"></div>
-            <div class="digit-node">0</div><div class="digit-node">1</div><div class="digit-node">2</div><div class="digit-node">3</div><div class="digit-node">4</div>
-            <div class="digit-node">5</div><div class="digit-node">6</div><div class="digit-node">7</div><div class="digit-node">8</div><div class="digit-node">9</div>
-        </div>
-
-        <div class="grid-inputs">
-            <input type="number" id="stake" placeholder="STAKE" value="0.35">
-            <input type="number" id="martingale" placeholder="MART" value="2.1">
-            <input type="number" id="max_steps" placeholder="MAX_STEP" value="5">
-            <select id="strategy">
-                <option value="HYBRID">STRAT: HYBRID_CORE</option>
-                <option value="EO">STRAT: EO_REVERSAL</option>
-            </select>
-        </div>
-
-        <div class="turbo-mode">
-            <label style="font-size: 10px; color: #f0883e;">TURBO_PROTOCOL</label>
-            <input type="checkbox" id="turbo_mode">
-        </div>
-
-        <button id="btn-toggle" class="btn-start" onclick="toggleTrading()">START_SEQUENCE</button>
-        <div id="log">// SYSTEM_AWAITING_CMD</div>
     </div>
-    <script src="app.js"></script>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        <!-- LEFT SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Markets</div>
+                <div class="sidebar-item active">📊 Derived</div>
+                <div class="sidebar-item">💼 Baskets</div>
+                <div class="sidebar-item">🔗 Synthetics</div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">Indices</div>
+                <div class="sidebar-item">Volatility 10</div>
+                <div class="sidebar-item">Volatility 25</div>
+                <div class="sidebar-item">Volatility 100</div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div class="sub-header">
+                <span>Volatility 100 (1s) Index</span>
+                <span id="current-price">9862.20</span>
+                <span id="price-change" style="color: #ff4444;">-0.30 (0.00%)</span>
+            </div>
+
+            <div class="chart-area">
+                <!-- CHART PANEL -->
+                <div class="chart-panel">
+                    <div class="chart-title">Last Digit Prediction</div>
+                    <div class="mock-chart">
+                        <canvas id="chart"></canvas>
+                    </div>
+                    <div class="digit-history" id="digit-history"></div>
+                </div>
+
+                <!-- RIGHT PANEL -->
+                <div class="right-panel">
+                    <div class="panel-header">
+                        <div class="panel-tabs">
+                            <div class="panel-tab active">Summary</div>
+                            <div class="panel-tab">Transactions</div>
+                            <div class="panel-tab">Journal</div>
+                        </div>
+                    </div>
+
+                    <div class="trade-section">
+                        <!-- TRADE TYPES -->
+                        <div style="margin-bottom: 20px;">
+                            <label class="input-label">Trade Type</label>
+                            <div class="trade-type-selector">
+                                <button class="trade-type-btn active" data-type="match">Matches</button>
+                                <button class="trade-type-btn" data-type="differs">Differs</button>
+                            </div>
+                        </div>
+
+                        <!-- DIGIT PAD -->
+                        <div style="margin-bottom: 20px;">
+                            <label class="input-label">Last Digit Prediction</label>
+                            <div class="digit-pad" id="digit-pad"></div>
+                        </div>
+
+                        <!-- STAKE INPUT -->
+                        <div class="input-group">
+                            <label class="input-label">Stake (USD)</label>
+                            <input type="number" id="stake-input" value="10" min="0.01" step="0.01">
+                        </div>
+
+                        <!-- PAYOUT INFO -->
+                        <div class="payout-info" id="payout-info">
+                            Payout: <strong id="payout-value">0.00 USD</strong>
+                        </div>
+
+                        <!-- TRADE BUTTONS -->
+                        <div class="trade-buttons">
+                            <button class="btn-match green" id="btn-match">💚 Matches<br><span style="font-size: 10px;">792.90%</span></button>
+                            <button class="btn-match red" id="btn-differs">❌ Differs<br><span style="font-size: 10px;">9.60%</span></button>
+                        </div>
+
+                        <!-- STATS -->
+                        <div class="stats-box">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Stake:</span>
+                                <span class="stat-value" id="stat-stake">0.00 USD</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Payout:</span>
+                                <span class="stat-value" id="stat-payout">0.00 USD</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">No. of Runs:</span>
+                                <span class="stat-value" id="stat-runs">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Contracts Lost:</span>
+                                <span class="stat-value" id="stat-lost">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Contracts Won:</span>
+                                <span class="stat-value" id="stat-won">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Profit/Loss:</span>
+                                <span class="stat-value" id="stat-profit">0.00 USD</span>
+                            </div>
+                        </div>
+
+                        <button style="width: 100%; margin-top: 15px; padding: 10px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Initialize digit pad -->
+    <script>
+        // Create digit pad
+        const digitPad = document.getElementById('digit-pad');
+        for (let i = 0; i < 10; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'digit-pad-btn';
+            btn.textContent = i;
+            btn.onclick = () => selectDigit(i);
+            digitPad.appendChild(btn);
+        }
+
+        let selectedDigit = null;
+
+        function selectDigit(digit) {
+            document.querySelectorAll('.digit-pad-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            selectedDigit = digit;
+            updatePayout();
+        }
+
+        function updatePayout() {
+            const stake = parseFloat(document.getElementById('stake-input').value) || 0;
+            const payout = (stake * 7.929).toFixed(2);
+            document.getElementById('payout-value').textContent = payout + ' USD';
+        }
+
+        document.getElementById('stake-input').addEventListener('input', updatePayout);
+
+        // Initialize with some dummy data
+        updatePayout();
+    </script>
 </body>
 </html>

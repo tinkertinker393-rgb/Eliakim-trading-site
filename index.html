@@ -3,184 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DBot - Custom Integrated Site</title>
+    <title>DBot Integrated - Full Version</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --deriv-red: #ff444f; --deriv-dark: #0e2433; --deriv-bg: #f2f3f4; }
-        body { background-color: var(--deriv-bg); font-family: 'ibm-plex-sans', sans-serif; overflow: hidden; }
+        :root { --deriv-red: #ff444f; --deriv-dark: #0e2433; --bg: #f2f3f4; }
+        body { background-color: var(--bg); font-family: sans-serif; overflow: hidden; height: 100vh; }
         .active-tab { border-bottom: 3px solid var(--deriv-red); color: #333; font-weight: bold; }
-        
-        /* Block Styling exactly like Screenshot 111105 */
-        .dbot-block { background: white; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 12px; border: 1px solid #d6dadc; min-width: 300px; }
-        .block-header { background: var(--deriv-dark); color: white; padding: 6px 12px; font-size: 12px; border-radius: 4px 4px 0 0; display: flex; align-items: center; }
-        .block-header i { margin-right: 8px; font-size: 10px; }
-        .block-content { padding: 10px; font-size: 11px; color: #333; }
-        .block-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        select, input { border: 1px solid #d6dadc; border-radius: 3px; padding: 2px 4px; background: #fff; outline: none; }
-        
-        /* Summary Panel Sidebar */
-        .right-panel { background: white; border-left: 1px solid #d6dadc; width: 320px; display: flex; flex-col; height: calc(100vh - 100px); }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; border-top: 1px solid #eee; background: #f9fafb; }
-        .stat-box { font-size: 10px; color: #999; text-transform: uppercase; font-weight: bold; }
-        .stat-val { font-size: 14px; color: #333; font-family: monospace; }
+        .dbot-block { background: white; border: 1px solid #d6dadc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .block-header { background: var(--deriv-dark); color: white; padding: 8px 12px; font-size: 12px; border-radius: 4px 4px 0 0; }
+        .acc-dropdown { display: none; position: absolute; top: 100%; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); width: 280px; z-index: 100; }
+        .show { display: block; }
+        #chart-container { width: 100%; height: 400px; }
     </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col">
 
-    <nav class="bg-white border-b px-4 py-2 flex items-center justify-between">
+    <nav class="bg-white border-b px-4 py-2 flex items-center justify-between relative">
         <div class="flex items-center space-x-6">
-            <div class="text-red-500 font-bold text-2xl">d</div>
-            <div class="flex space-x-4 text-sm text-gray-600 font-medium">
-                <button class="hover:text-black">Trader's Hub</button>
-                <button class="hover:text-black">Cashier</button>
-                <button class="hover:text-black">Reports</button>
+            <div class="text-red-500 font-bold text-2xl italic">d</div>
+            <div class="flex space-x-4 text-sm font-medium text-gray-500">
+                <span>Trader's Hub</span><span>Cashier</span><span>Reports</span>
             </div>
-            <div class="bg-gray-100 px-2 py-1 rounded flex items-center text-xs font-bold">
-                <span class="bg-red-500 text-white rounded px-1 mr-2 text-[10px]">DB</span> deriv Bot
-                <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
+            <div class="bg-gray-100 px-3 py-1 rounded flex items-center text-xs font-bold">
+                <span class="bg-red-500 text-white rounded px-1 mr-2">DB</span> deriv Bot
             </div>
         </div>
+
         <div class="flex items-center space-x-4">
             <button class="bg-red-500 text-white px-4 py-1.5 rounded font-bold text-sm">Deposit</button>
-            <div class="flex items-center border rounded px-2 py-1">
-                <img src="https://flagcdn.com/w20/us.png" class="w-4 h-3 mr-2">
-                <span id="top-balance" class="font-bold text-sm text-green-600">0.00 USD</span>
-                <i class="fas fa-chevron-down ml-2 text-xs text-gray-400"></i>
+            <div class="relative">
+                <div onclick="toggleAcc()" class="flex items-center border rounded px-3 py-1 cursor-pointer bg-white hover:bg-gray-50">
+                    <img src="https://flagcdn.com/w20/us.png" class="w-4 h-3 mr-2">
+                    <div class="flex flex-col leading-none">
+                        <span id="active-balance" class="font-bold text-sm text-green-600">0.00 USD</span>
+                        <span id="active-type" class="text-[9px] text-gray-400 font-bold uppercase">Demo</span>
+                    </div>
+                    <i class="fas fa-chevron-down ml-2 text-xs text-gray-400"></i>
+                </div>
+                
+                <div id="acc-menu" class="acc-dropdown p-4">
+                    <div class="text-xs font-bold text-gray-400 mb-2">ACCOUNTS</div>
+                    <div onclick="switchAccount('DEMO')" class="flex justify-between items-center p-3 hover:bg-gray-50 cursor-pointer rounded border-b">
+                        <div><p class="text-xs font-bold">Demo Account</p><p class="text-[10px] text-gray-400">sI05YqeXBucWOm1</p></div>
+                        <span id="demo-bal-small" class="font-bold text-sm">0.00 USD</span>
+                    </div>
+                    <div onclick="switchAccount('REAL')" class="flex justify-between items-center p-3 hover:bg-gray-50 cursor-pointer rounded mt-1">
+                        <div><p class="text-xs font-bold text-red-500">Real Account</p><p class="text-[10px] text-gray-400">A4lxJkh0sWeXD60</p></div>
+                        <span id="real-bal-small" class="font-bold text-sm">0.00 USD</span>
+                    </div>
+                </div>
             </div>
-            <i class="fas fa-user-circle text-2xl text-gray-400"></i>
         </div>
     </nav>
 
-    <div class="bg-white border-b flex px-6 space-x-8 text-sm text-gray-500">
-        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-3 px-2 active-tab"><i class="fas fa-th-large mr-2"></i>Dashboard</button>
-        <button onclick="switchTab('botbuilder')" id="tab-botbuilder" class="py-3 px-2 hover:text-black"><i class="fas fa-robot mr-2"></i>Bot Builder</button>
-        <button onclick="switchTab('charts')" id="tab-charts" class="py-3 px-2 hover:text-black"><i class="fas fa-chart-line mr-2"></i>Charts</button>
+    <div class="bg-white border-b flex px-6 space-x-10 text-sm text-gray-500">
+        <button onclick="showPage('dashboard')" id="btn-dashboard" class="py-3 active-tab">Dashboard</button>
+        <button onclick="showPage('botbuilder')" id="btn-botbuilder" class="py-3">Bot Builder</button>
+        <button onclick="showPage('charts')" id="btn-charts" class="py-3">Charts</button>
     </div>
 
     <div class="flex flex-1 overflow-hidden">
-        
-        <aside id="blocks-menu" class="w-64 bg-white border-r p-4 hidden">
-            <button class="w-full bg-red-500 text-white py-2 rounded font-bold mb-4 text-sm">Quick strategy</button>
-            <div class="text-xs font-bold text-gray-400 uppercase mb-4 flex justify-between">Blocks menu <i class="fas fa-chevron-up"></i></div>
-            <div class="space-y-3 text-sm text-gray-700">
-                <div class="flex items-center justify-between p-1 hover:bg-gray-50 cursor-pointer">Trade parameters <i class="fas fa-chevron-right text-[10px]"></i></div>
-                <div class="flex items-center justify-between p-1 hover:bg-gray-50 cursor-pointer">Purchase conditions <i class="fas fa-chevron-right text-[10px]"></i></div>
-                <div class="flex items-center justify-between p-1 hover:bg-gray-50 cursor-pointer">Sell conditions (optional) <i class="fas fa-chevron-right text-[10px]"></i></div>
-            </div>
-        </aside>
-
-        <main class="flex-1 p-6 overflow-auto relative" id="main-view">
-            <div id="view-dashboard" class="flex flex-col items-center justify-center h-full">
-                <h2 class="text-xl font-bold mb-2">Load or build your bot</h2>
-                <div class="flex space-x-6 mt-8">
-                    <div class="w-24 text-center"><i class="fas fa-desktop text-4xl text-blue-900 mb-2"></i><p class="text-[10px] font-bold">My computer</p></div>
-                    <div class="w-24 text-center"><i class="fab fa-google-drive text-4xl text-green-500 mb-2"></i><p class="text-[10px] font-bold">Google Drive</p></div>
-                    <div class="w-24 text-center"><i class="fas fa-puzzle-piece text-4xl text-blue-400 mb-2"></i><p class="text-[10px] font-bold">Bot builder</p></div>
-                    <div class="w-24 text-center"><i class="fas fa-th-large text-4xl text-teal-400 mb-2"></i><p class="text-[10px] font-bold">Quick strategy</p></div>
+        <main class="flex-1 p-8 overflow-auto" id="main-content">
+            
+            <div id="page-dashboard" class="flex flex-col items-center justify-center h-full text-center">
+                <h2 class="text-2xl font-bold mb-8">Load or build your bot</h2>
+                <div class="flex gap-10">
+                    <label class="cursor-pointer group">
+                        <input type="file" class="hidden" onchange="handleFile(this)">
+                        <div class="w-28"><i class="fas fa-desktop text-5xl text-blue-900 group-hover:scale-110 transition"></i><p class="mt-4 text-xs font-bold">My computer</p></div>
+                    </label>
+                    <div class="w-28 cursor-pointer"><i class="fab fa-google-drive text-5xl text-green-500"></i><p class="mt-4 text-xs font-bold">Google Drive</p></div>
+                    <div onclick="showPage('botbuilder')" class="w-28 cursor-pointer"><i class="fas fa-puzzle-piece text-5xl text-blue-400"></i><p class="mt-4 text-xs font-bold">Bot builder</p></div>
+                    <div class="w-28 cursor-pointer"><i class="fas fa-th-large text-5xl text-teal-400"></i><p class="mt-4 text-xs font-bold">Quick strategy</p></div>
                 </div>
             </div>
 
-            <div id="view-botbuilder" class="hidden h-full">
-                <div class="dbot-block w-[450px]">
-                    <div class="block-header"><i class="fas fa-cog"></i> 1. Trade parameters</div>
-                    <div class="block-content">
-                        <div class="block-row">Market: <select class="flex-1"><option>Derived</option></select> <select class="flex-1"><option>Continuous Indices</option></select></div>
-                        <div class="block-row"><select class="w-full" id="market-select"><option value="1HZ100V">Volatility 100 (1s) Index</option><option value="1HZ10V">Volatility 10 (1s) Index</option></select></div>
-                        <div class="block-row">Trade Type: <select class="flex-1"><option>Up/Down</option></select> <select class="flex-1"><option>Rise/Fall</option></select></div>
-                        <hr class="my-2">
-                        <div class="block-row">Duration: <select><option>Ticks</option></select> <input type="number" value="1" class="w-12"> Stake: <input type="number" value="0.35" class="w-16"> USD</div>
-                    </div>
-                </div>
-                <div class="dbot-block w-[250px] border-l-4 border-blue-400">
-                    <div class="block-header" style="background:#1e3a8a">2. Purchase conditions</div>
-                    <div class="block-content">
-                        <div class="block-row">Purchase: <select class="w-full text-blue-600 font-bold"><option>Rise</option><option>Fall</option></select></div>
+            <div id="page-botbuilder" class="hidden">
+                <div class="dbot-block w-[500px]">
+                    <div class="block-header">1. Trade parameters</div>
+                    <div class="p-4 text-xs space-y-3">
+                        <div class="flex gap-2">Market: <select class="border p-1 rounded"><option>Derived</option></select><select class="border p-1 rounded"><option>Continuous Indices</option></select></div>
+                        <select id="asset-select" onchange="changeAsset()" class="w-full border p-1 rounded font-bold">
+                            <option value="1HZ100V">Volatility 100 (1s) Index</option>
+                            <option value="1HZ10V">Volatility 10 (1s) Index</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <div id="view-charts" class="hidden h-full bg-white rounded border">
-                <div class="p-4 border-b flex justify-between items-center">
-                    <div class="font-bold" id="chart-title">Volatility 100 (1s) Index</div>
-                    <div class="text-xl font-mono font-bold" id="live-price">0.0000</div>
-                </div>
-                <div class="h-full flex items-center justify-center text-gray-300">
-                    <i class="fas fa-chart-area text-6xl"></i>
+            <div id="page-charts" class="hidden h-full">
+                <div class="bg-white p-4 rounded shadow-sm border h-full flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="chart-name" class="font-bold">Volatility 100 (1s) Index</h3>
+                        <div id="chart-price" class="text-2xl font-mono font-bold">0.0000</div>
+                    </div>
+                    <div id="chart-container" class="flex-1"></div>
                 </div>
             </div>
         </main>
 
-        <aside class="right-panel">
-            <div class="flex text-[10px] font-bold border-b text-gray-400">
+        <aside class="w-[320px] bg-white border-l flex flex-col">
+            <div class="flex border-b text-[10px] font-bold text-gray-400">
                 <button class="flex-1 py-3 border-b-2 border-red-500 text-red-500">SUMMARY</button>
                 <button class="flex-1 py-3">TRANSACTIONS</button>
                 <button class="flex-1 py-3">JOURNAL</button>
             </div>
-            <div class="flex-1 p-6 text-center flex flex-col items-center justify-center">
-                <p class="text-xs text-gray-400 leading-relaxed" id="status-msg">When you're ready to trade, hit <b>Run</b>. You'll be able to track your bot's performance here.</p>
+            <div class="flex-1 flex items-center justify-center p-8 text-center text-xs text-gray-400">
+                <p id="bot-status">Bot is not running. Hit <b>Run</b> to start trading.</p>
             </div>
-            
-            <div class="stat-grid">
-                <div class="stat-box">Total Stake<br><span class="stat-val text-black">0.00 USD</span></div>
-                <div class="stat-box">Total Payout<br><span class="stat-val text-black">0.00 USD</span></div>
-                <div class="stat-box">Contracts Lost<br><span class="stat-val text-red-500">0</span></div>
-                <div class="stat-box">Contracts Won<br><span class="stat-val text-green-500">0</span></div>
+            <div class="p-4 border-t bg-gray-50 grid grid-cols-2 gap-4 text-[10px] font-bold text-gray-400">
+                <div>TOTAL STAKE<br><span class="text-black text-sm">0.00 USD</span></div>
+                <div>TOTAL PAYOUT<br><span class="text-black text-sm">0.00 USD</span></div>
             </div>
-            
-            <div class="p-4 bg-gray-50 border-t">
-                <button id="mainBtn" onclick="toggleBot()" class="w-full bg-[#4bb4b3] text-white py-2 rounded font-bold hover:bg-teal-600">Run</button>
-                <button id="resetBtn" class="w-full mt-2 border py-1.5 rounded text-xs font-bold text-gray-600">Reset</button>
+            <div class="p-4">
+                <button onclick="runBot()" id="run-btn" class="w-full bg-[#4bb4b3] text-white py-3 rounded font-bold hover:opacity-90 transition">Run</button>
             </div>
         </aside>
     </div>
 
     <script>
         const APP_ID = '119353';
-        const TOKEN = 'sI05YqeXBucWOm1'; // Demo Token
-        let ws, isRunning = false;
+        const TOKENS = { REAL: 'A4lxJkh0sWeXD60', DEMO: 'sI05YqeXBucWOm1' };
+        let currentType = 'DEMO';
+        let ws, chart, lineSeries;
 
-        function switchTab(tab) {
-            ['dashboard', 'botbuilder', 'charts'].forEach(t => {
-                document.getElementById('view-' + t).classList.add('hidden');
-                document.getElementById('tab-' + t).classList.remove('active-tab');
+        // --- UI Logic ---
+        function toggleAcc() { document.getElementById('acc-menu').classList.toggle('show'); }
+        
+        function showPage(pageId) {
+            ['dashboard', 'botbuilder', 'charts'].forEach(p => {
+                document.getElementById('page-' + p).classList.add('hidden');
+                document.getElementById('btn-' + p).classList.remove('active-tab');
             });
-            document.getElementById('view-' + tab).classList.remove('hidden');
-            document.getElementById('tab-' + tab).classList.add('active-tab');
-            document.getElementById('blocks-menu').style.display = (tab === 'botbuilder') ? 'block' : 'none';
+            document.getElementById('page-' + pageId).classList.remove('hidden');
+            document.getElementById('btn-' + pageId).classList.add('active-tab');
+            if(pageId === 'charts' && !chart) initChart();
         }
 
-        function initWS() {
+        function handleFile(input) {
+            const file = input.files[0];
+            if (file) alert(`Bot loaded from: ${file.name}`);
+        }
+
+        // --- Charting ---
+        function initChart() {
+            chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+                layout: { backgroundColor: '#ffffff', textColor: '#333' },
+                grid: { vertLines: { color: '#f0f0f0' }, horzLines: { color: '#f0f0f0' } },
+                timeScale: { timeVisible: true, secondsVisible: true }
+            });
+            lineSeries = chart.addLineSeries({ color: '#ff444f', lineWidth: 2 });
+        }
+
+        // --- API & Account Logic ---
+        function switchAccount(type) {
+            currentType = type;
+            document.getElementById('active-type').innerText = type;
+            document.getElementById('acc-menu').classList.remove('show');
+            connect(); // Reconnect with new token
+        }
+
+        function connect() {
+            if(ws) ws.close();
             ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`);
-            ws.onopen = () => ws.send(JSON.stringify({ authorize: TOKEN }));
+            
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ authorize: TOKENS[currentType] }));
+            };
+
             ws.onmessage = (msg) => {
                 const data = JSON.parse(msg.data);
                 if (data.msg_type === 'authorize') {
-                    document.getElementById('top-balance').innerText = `${data.authorize.balance} USD`;
-                    ws.send(JSON.stringify({ ticks: '1HZ100V', subscribe: 1 }));
+                    const bal = data.authorize.balance + " USD";
+                    document.getElementById('active-balance').innerText = bal;
+                    document.getElementById(currentType === 'DEMO' ? 'demo-bal-small' : 'real-bal-small').innerText = bal;
+                    subscribeToTicks(document.getElementById('asset-select').value);
                 }
                 if (data.msg_type === 'tick') {
-                    document.getElementById('live-price').innerText = data.tick.quote;
+                    const price = data.tick.quote;
+                    document.getElementById('chart-price').innerText = price;
+                    if(lineSeries) {
+                        lineSeries.update({ time: data.tick.epoch, value: price });
+                    }
                 }
             };
         }
 
-        function toggleBot() {
-            isRunning = !isRunning;
-            const btn = document.getElementById('mainBtn');
-            const status = document.getElementById('status-msg');
-            if (isRunning) {
-                btn.innerText = "Stop";
-                btn.style.backgroundColor = "#ff444f";
-                status.innerHTML = "<span class='text-green-500 font-bold'>Bot is running...</span><br>Monitoring Volatility 100 Index";
-            } else {
-                btn.innerText = "Run";
-                btn.style.backgroundColor = "#4bb4b3";
-                status.innerText = "Bot stopped.";
-            }
+        function subscribeToTicks(symbol) {
+            ws.send(JSON.stringify({ forget_all: 'ticks' }));
+            ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
         }
 
-        initWS();
+        function changeAsset() {
+            const symbol = document.getElementById('asset-select').value;
+            document.getElementById('chart-name').innerText = symbol;
+            subscribeToTicks(symbol);
+        }
+
+        function runBot() {
+            const btn = document.getElementById('run-btn');
+            btn.innerText = btn.innerText === 'Run' ? 'Stop' : 'Run';
+            btn.classList.toggle('bg-red-500');
+            document.getElementById('bot-status').innerText = btn.innerText === 'Stop' ? 'Bot is running...' : 'Bot stopped.';
+        }
+
+        // Initialize
+        connect();
     </script>
 </body>
 </html>
